@@ -206,3 +206,137 @@ if (! function_exists('supabase_sync_delete')) {
         supabase_sync_request('DELETE', $table, $query);
     }
 }
+
+if (! function_exists('supabase_pull_sync')) {
+    /**
+     * Pulls data from Supabase and synchronizes it to local database
+     *
+     * @param string $db Local database name
+     * @param string $table Local table name
+     * @return array Sync status statistics
+     */
+    function supabase_pull_sync($db, $table)
+    {
+        $stats = array('inserted' => 0, 'updated' => 0, 'deleted' => 0, 'error' => '');
+
+        if (!should_sync_table($db, $table)) {
+            $stats['error'] = 'Table syncing is disabled or not configured for this table.';
+            return $stats;
+        }
+
+        /** @var CI_Controller $CI */
+        $CI = &get_instance();
+        $CI->load->config('supabase');
+
+        /** @var CI_Config $config */
+        $config =& load_class('Config', 'core');
+
+        $enabled = $config->item('supabase_sync_enabled');
+        if (!$enabled) {
+            $stats['error'] = 'Supabase sync is disabled.';
+            return $stats;
+        }
+
+        $url = $config->item('supabase_url');
+        $key = $config->item('supabase_key');
+
+        if (empty($url) || empty($key)) {
+            $stats['error'] = 'Supabase URL or Key is missing.';
+            return $stats;
+        }
+
+        // Get primary key name for local table
+        $CI->load->model('tablemodel');
+        $CI->load->model('dbmodel');
+        $CI->dbmodel->initialize($db);
+        $field = $CI->tablemodel->getPrimaryKey($table);
+        $primaryKeyName = $field ? $field->name : NULL;
+
+        if (empty($primaryKeyName)) {
+            $stats['error'] = 'No primary key found for local table.';
+            return $stats;
+        }
+
+        // Fetch records from Supabase
+        $url = rtrim($url, '/');
+        $request_url = $url . '/' . $table;
+
+        $ch = curl_init($request_url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            "apikey: " . $key,
+            "Authorization: Bearer " . $key,
+            "Content-Type: application/json"
+        ));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($ch);
+        curl_close($ch);
+
+        if ($curl_error) {
+            $stats['error'] = 'cURL error: ' . $curl_error;
+            log_message('error', 'Supabase pull error: ' . $curl_error);
+            return $stats;
+        }
+
+        if ($http_code !== 200) {
+            $stats['error'] = 'Supabase API returned HTTP code: ' . $http_code . ' Response: ' . $response;
+            log_message('error', 'Supabase pull error. HTTP ' . $http_code . ': ' . $response);
+            return $stats;
+        }
+
+        $records = json_decode($response, TRUE);
+        if (!is_array($records)) {
+            $stats['error'] = 'Failed to parse JSON response from Supabase.';
+            return $stats;
+        }
+
+        $local_fields = $CI->dbmodel->theDB->list_fields($table);
+        $fields_flip = array_flip($local_fields);
+
+        foreach ($records as $record) {
+            if (!isset($record[$primaryKeyName])) {
+                continue;
+            }
+
+            $record_id = $record[$primaryKeyName];
+
+            // Filter columns to contain only those present in local database
+            $filtered_data = array_intersect_key($record, $fields_flip);
+
+            // Check if record exists locally
+            $existing = $CI->dbmodel->theDB->from($table)->where($primaryKeyName, $record_id)->get()->row_array();
+
+            if ($existing) {
+                // Check if any fields differ
+                $differs = FALSE;
+                foreach ($filtered_data as $col => $val) {
+                    if ($existing[$col] != $val) {
+                        $differs = TRUE;
+                        break;
+                    }
+                }
+
+                if ($differs) {
+                    $CI->dbmodel->theDB->where($primaryKeyName, $record_id)->update($table, $filtered_data);
+                    $stats['updated']++;
+                }
+            } else {
+                $CI->dbmodel->theDB->insert($table, $filtered_data);
+                $stats['inserted']++;
+            }
+        }
+
+        // Write pull to sync log
+        file_put_contents(
+            'c:/xampp/htdocs/sixmiles/supabase_sync_log.txt',
+            "[" . date('Y-m-d H:i:s') . "] PULL SYNC ($db.$table) - Fetched: " . count($records) . ", Inserted: " . $stats['inserted'] . ", Updated: " . $stats['updated'] . "\n",
+            FILE_APPEND
+        );
+
+        return $stats;
+    }
+}

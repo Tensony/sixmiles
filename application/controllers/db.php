@@ -1668,6 +1668,35 @@ class Db extends CI_Controller {
 		$this->load->helper('download');
 		force_download($table . '_' . date('Y-m-d') . '.sql', $sql_data);
 	}
+
+	/**
+	 * Pulls records from Supabase and synchronizes them to the local MySQL table.
+	 *
+	 * @param string $db Database name
+	 * @param string $table Table name
+	 * @return void
+	 */
+	public function pullSync($db, $table)
+	{
+		// 1. Initialize DB connection in the dbmodel
+		$this->dbmodel->initialize($db);
+
+		// 2. Load supabase helper
+		$this->load->helper('supabase');
+
+		// 3. Perform the pull sync
+		$stats = supabase_pull_sync($db, $table);
+
+		if (!empty($stats['error'])) {
+			$this->session->set_flashdata('error_message', $stats['error']);
+		} else {
+			$msg = "Successfully synchronized from Supabase! Records Inserted: " . $stats['inserted'] . ", Updated: " . $stats['updated'] . ".";
+			$this->session->set_flashdata('success_message', $msg);
+		}
+
+		// 4. Redirect back to the table view page
+		redirect(site_url("db/" . $db . "/" . $table), 'location');
+	}
 				
 }
 

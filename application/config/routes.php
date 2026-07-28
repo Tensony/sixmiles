@@ -73,6 +73,7 @@ $route['db/uploadCsv/(.+?)'] = "db/uploadCsv/$1";
 $route['db/importCsv/(.+?)'] = "db/importCsv/$1";
 $route['db/export_csv/(.+?)/(.+?)'] = 'db/export_csv/$1/$2';
 $route['db/export_sql/(.+?)/(.+?)'] = 'db/export_sql/$1/$2';
+$route['db/pullSync/(.+?)/(.+?)'] = 'db/pullSync/$1/$2';
 $route['db/(.+?)/(.+?)'] = 'db/index/$1/$2';
 $route['db/(.+?)'] = 'db/index/$1';
 

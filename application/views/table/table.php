@@ -60,6 +60,7 @@
     			    			<?php endif;?>
     			    			<a href="<?php echo site_url("db/export_csv/".$theDB."/".$theTable);?>" class="btn btn-info btn-sm btn-embossed btn-embossed"><span class="fui-export"></span> Export CSV</a>
     			    			<a href="<?php echo site_url("db/export_sql/".$theDB."/".$theTable);?>" class="btn btn-inverse btn-sm btn-embossed btn-embossed"><span class="fui-export"></span> Export SQL</a>
+    			    			<a href="<?php echo site_url("db/pullSync/".$theDB."/".$theTable);?>" class="btn btn-warning btn-sm btn-embossed btn-embossed"><span class="fui-loop"></span> Sync from Supabase</a>
     			    			
     			    		</div>
     			    			
