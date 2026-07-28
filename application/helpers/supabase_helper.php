@@ -248,8 +248,8 @@ if (! function_exists('supabase_pull_sync')) {
         // Get primary key name for local table
         $CI->load->model('tablemodel');
         $CI->load->model('dbmodel');
-        $CI->dbmodel->initialize($db);
-        $field = $CI->tablemodel->getPrimaryKey($table);
+        $CI->{"dbmodel"}->initialize($db);
+        $field = $CI->{"tablemodel"}->getPrimaryKey($table);
         $primaryKeyName = $field ? $field->name : NULL;
 
         if (empty($primaryKeyName)) {
@@ -294,7 +294,7 @@ if (! function_exists('supabase_pull_sync')) {
             return $stats;
         }
 
-        $local_fields = $CI->dbmodel->theDB->list_fields($table);
+        $local_fields = $CI->{"dbmodel"}->theDB->list_fields($table);
         $fields_flip = array_flip($local_fields);
 
         foreach ($records as $record) {
@@ -308,7 +308,7 @@ if (! function_exists('supabase_pull_sync')) {
             $filtered_data = array_intersect_key($record, $fields_flip);
 
             // Check if record exists locally
-            $existing = $CI->dbmodel->theDB->from($table)->where($primaryKeyName, $record_id)->get()->row_array();
+            $existing = $CI->{"dbmodel"}->theDB->from($table)->where($primaryKeyName, $record_id)->get()->row_array();
 
             if ($existing) {
                 // Check if any fields differ
@@ -321,11 +321,11 @@ if (! function_exists('supabase_pull_sync')) {
                 }
 
                 if ($differs) {
-                    $CI->dbmodel->theDB->where($primaryKeyName, $record_id)->update($table, $filtered_data);
+                    $CI->{"dbmodel"}->theDB->where($primaryKeyName, $record_id)->update($table, $filtered_data);
                     $stats['updated']++;
                 }
             } else {
-                $CI->dbmodel->theDB->insert($table, $filtered_data);
+                $CI->{"dbmodel"}->theDB->insert($table, $filtered_data);
                 $stats['inserted']++;
             }
         }
