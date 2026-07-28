@@ -1,0 +1,8 @@
+# CodeIgniter gitignore
+/application/logs/log-*.php
+/supabase_sync_log.txt
+/tmp/*
+/uploads/*
+.DS_Store
+Thumbs.db
+.vscode/
