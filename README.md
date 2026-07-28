@@ -16,6 +16,7 @@ A CodeIgniter-based web application to manage local MySQL/MariaDB database table
 ## 🛠️ Installation & Setup
 
 ### 1. Configure Supabase Sync
+
 Open **`application/config/supabase.php`** and configure your credentials:
 
 ```php
@@ -28,7 +29,9 @@ $config['supabase_synced_tables'] = array();
 ```
 
 ### 2. Desktop Launcher Setup (Windows)
+
 To create a clean double-clickable launcher on a new computer:
+
 1. Open the project folder `C:\xampp\htdocs\sixmiles\`.
 2. Right-click on **`Launch_App.vbs`** -> **Send to** -> **Desktop (create shortcut)**.
 3. Go to the Desktop, right-click the shortcut, and select **Properties**.
@@ -40,6 +43,7 @@ To create a clean double-clickable launcher on a new computer:
 ## 📈 Monitoring & Logs
 
 Synchronization details, including request payloads, response statuses, and errors (e.g. `HTTP 201 Created` or `HTTP 400 Bad Request`), are recorded in:
+
 * **File**: `supabase_sync_log.txt` (located in the project root)
 
 ---
